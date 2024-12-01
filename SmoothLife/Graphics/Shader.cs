@@ -89,6 +89,11 @@ public class Shader : IDisposable
         GL.Uniform1(GL.GetUniformLocation(Handle, name), data);
     }
 
+    public void SetBool(string name, bool data)
+    {
+        GL.Uniform1(GL.GetUniformLocation(Handle, name), data ? 1 : 0);
+    }
+    
     public void SetVector2(string name, Vector2 data)
     {
         GL.Uniform2(GL.GetUniformLocation(Handle, name), data);

@@ -48,6 +48,9 @@ public class Window
             
             imguiController.Update(window, (float)dt.Time);
             
+            MouseState = window.MouseState;
+            KeyboardState = window.KeyboardState;
+
             Render?.Invoke(dt, window.MouseState, window.KeyboardState);
           
             Time += (float)dt.Time;
@@ -93,6 +96,8 @@ public class Window
     public Vector2 MousePosition;
     private Vector2 _prevMousePosition;
     public Vector2 MouseDelta => MousePosition - _prevMousePosition;
+    public MouseState MouseState { get; set; }
+    public KeyboardState KeyboardState { get; set; }
 
     public void Run()
     {

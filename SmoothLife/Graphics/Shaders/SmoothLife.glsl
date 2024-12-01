@@ -15,7 +15,7 @@ uniform int width;
 uniform int height;
 
 // Kernel radius for SmoothLife
-const int kernelRadius = 32; // Adjust as needed, circular kernel
+const int kernelRadius = 16; // Adjust as needed, circular kernel
 const float kernelRadiusF = float(kernelRadius);
 
 // Because its a circular kernel, we need to compute the number of pixels
@@ -25,21 +25,17 @@ const int internalRadius = 3; // 3x3 kernel
 const float internalRadiusF = float(internalRadius);
 const int internalNumPixels = (2 * internalRadius + 1) * (2 * internalRadius + 1);
 
-float sigmoid(float x, float x0, float sigma){
-    return 1.0 / (1.0 + exp(-1.0 * (x - x0) / sigma));
+float fastSigmoid(float x, float x0, float sigma) {
+    float s = (x - x0) / sigma;
+    return 1.0 / (1.0 + exp(-s));
 }
 
-const float sig = 0.03;
-float growth(float u0, float u1){
-    
-    float s_u1 = sigmoid(u1, 0.3, sig);
-    
-    float t1 = sigmoid(u0, 0.256, sig) * (1.0 - sigmoid(u0, 0.44, sig));
-    float t2 = sigmoid(u0, 0.274, sig) * (1.0 - sigmoid(u0, 0.36, sig));
-
-        return s_u1 * t1 + (1.0 - s_u1) * t2;
+float growth(float u0, float u1) {
+    float s_u1 = fastSigmoid(u1, 0.25, 0.03);
+    float t1 = fastSigmoid(u0, 0.238, 0.03) * (1.0 - fastSigmoid(u0, 0.44, 0.03));
+    float t2 = fastSigmoid(u0, 0.26, 0.03) * (1.0 - fastSigmoid(u0, 0.9, 0.03));
+    return s_u1 * t1 + (1.0 - s_u1) * t2;
 }
-
 void main() {
     uint x = gl_GlobalInvocationID.x;
     uint y = gl_GlobalInvocationID.y;

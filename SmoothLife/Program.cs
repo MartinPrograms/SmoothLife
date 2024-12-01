@@ -70,15 +70,7 @@ window.Load += () =>
     // Create the input and output buffers
     slInput = new Ssbo<float>(new float[slWidth * slHeight],4, 0);
     slOutput = new Ssbo<float>(new float[slWidth * slHeight],4, 1);
-    
-    // Fill the input buffer with random data
-    for (int i = 0; i < slInput.Data.Length; i++)
-    {
-        // Weighted towards lower values
-        slInput.Data[i] = (float)Random.Shared.NextDouble() ;
-    }
-    slInput.Update();
-    
+
     smoothLifeShader.AddBuffer(slInput);
     smoothLifeShader.AddBuffer(slOutput); // Output buffer
     smoothLifeToTextureShader.AddBuffer(slInput); // Input buffer
@@ -106,7 +98,7 @@ void Step()
     GL.MemoryBarrier(MemoryBarrierFlags.ShaderStorageBarrierBit);
     
     // We need to copy the output buffer to the texture
-    slInput.From(slOutput);
+    slInput!.From(slOutput!);
 }
 
 void DrawState()
@@ -124,6 +116,8 @@ void DrawState()
     smoothLifeToTextureShader.SetVector2("mousePos",
         new Vector2(window.MousePosition.X, window.MousePosition.Y * -1 + window.Height));
     smoothLifeToTextureShader.SetFloat("radius", radius);
+    smoothLifeToTextureShader.SetBool("drawOnMouse", window.MouseState.IsButtonDown(MouseButton.Left) && !ImGui.IsAnyItemActive());
+    smoothLifeToTextureShader.SetBool("shift", window.KeyboardState.IsKeyDown(Keys.LeftShift));
     
     // Bind the texture to the output buffer (1)
     texture!.BindCompute(1, TextureAccess.WriteOnly);
@@ -134,6 +128,8 @@ void DrawState()
     
     // Unbind the texture
     texture!.Unbind();
+    
+    slInput!.Read();
 }
 
 float rate = 10; // 10 steps per second
@@ -247,7 +243,7 @@ uniform vec3 whiteLevel;
     
     ImGui.End();
     
-    if (dragging)
+    if (dragging && !ImGui.IsAnyItemActive())
     {
         pos += new System.Numerics.Vector2(-window.MouseDelta.X, window.MouseDelta.Y) / zoom;
     }

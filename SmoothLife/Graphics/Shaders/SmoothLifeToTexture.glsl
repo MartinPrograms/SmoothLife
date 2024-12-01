@@ -24,6 +24,8 @@ uniform float zoom; // Higher = more zoomed in
 
 uniform vec2 mousePos;
 uniform float radius;
+uniform bool drawOnMouse;
+uniform bool shift;
 
 // msaa samples
 const vec2[] samples = {
@@ -52,12 +54,12 @@ void main() {
     if (x >= width || y >= height) {
         return;
     }
-    
+
     vec3 result = vec3(0.0, 0.0, 0.0);
-    
+
     for (int i = 0; i < 4; i++) {
         float value = 0.0;
-        
+
         float offsetX = (float(x) - float(width) / 2.0) / zoom + pos.x + samples[i].x / zoom;
         float offsetY = (float(y) - float(height) / 2.0) / zoom + pos.y + samples[i].y / zoom;
 
@@ -84,6 +86,16 @@ void main() {
         }
     }
     result /= 4.0;
-    
+
     SetPixel(x, y, result.r, result.g, result.b);
+
+    if (drawOnMouse){
+    if (distance(ScreenToGrid(mousePos), ScreenToGrid(vec2(x, y))) < radius) {
+        float offsetX = (float(x) - float(width) / 2.0) / zoom + pos.x;
+        float offsetY = (float(y) - float(height) / 2.0) / zoom + pos.y;
+
+        uint index = uint(offsetY) * uint(slWidth) + uint(offsetX);
+        inputBuffer[index] = shift ? 0.0 : 1.0;
+    }
+}
 }
