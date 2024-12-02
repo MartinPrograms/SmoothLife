@@ -123,10 +123,20 @@ void main() {
             uint index = uint(offsetY) * uint(slWidth) + uint(offsetX);
             value = inputBuffer[index];
         }
+        else{
+            // wrap around
+            offsetX = mod(offsetX + float(slWidth), float(slWidth));
+            offsetY = mod(offsetY + float(slHeight), float(slHeight));
+            
+            uint index = uint(offsetY) * uint(slWidth) + uint(offsetX);
+            value = inputBuffer[index];
+        }
 
         // Now we display the value
         vec3 hsv = vec3(0.0, 0.5, log(value + 1.0) / log(2.0));
-        hsv.x = 100 * value;
+        
+        // based on value change the hue
+        hsv.x = 360.0 * value;
         
         result += HSVtoRGB(hsv);
 
