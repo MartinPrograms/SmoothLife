@@ -18,6 +18,12 @@ Mesh square = null;
 Ssbo<float> slInput = null;
 Ssbo<float> slOutput = null;
 
+int kernelSize = 16;
+int internalKernelSize = 3;
+float outerSigma = 2;
+float innerSigma = 1;
+Texture weightsTexture = null;
+
 int slWidth = 2000;
 int slHeight = 2000;
 
@@ -131,7 +137,11 @@ window.Load += () =>
     // Create the input and output buffers
     slInput = new Ssbo<float>(new float[slWidth * slHeight],4, 0);
     slOutput = new Ssbo<float>(new float[slWidth * slHeight],4, 1);
+    weightsTexture = new Texture((int)kernelSize, (int)kernelSize, new float[(int)(kernelSize * kernelSize)]);
 
+    // First we calculate the weights
+    var weightData = CalculateWeightData();
+    
     smoothLifeShader.AddBuffer(slInput);
     smoothLifeShader.AddBuffer(slOutput); // Output buffer
     smoothLifeToTextureShader.AddBuffer(slInput); // Input buffer
@@ -143,6 +153,43 @@ window.Load += () =>
     texture = new Texture(window.Width, window.Height, new float[window.Width * window.Height * 4]);
     square = Mesh.CreateSquare();
 };
+
+float[] CalculateWeightData()
+{
+    float[,] data = new float[(int)kernelSize, (int)kernelSize];
+    
+    for (int x = 0; x < kernelSize; x++)
+    {
+        for (int y = 0; y < kernelSize; y++)
+        {
+            var dx = x - kernelSize / 2;
+            var dy = y - kernelSize / 2;
+            var distance = Math.Sqrt(dx * dx + dy * dy);
+            
+            data[x, y] = (float)(Math.Exp(-distance * distance / (2 * outerSigma * outerSigma)) - Math.Exp(-distance * distance / (2 * innerSigma * innerSigma)));
+            
+            if (distance < internalKernelSize)
+            {
+                data[x, y] = 1;
+            }
+        }
+    }
+    
+    float[] floats = new float[(int)(kernelSize * kernelSize) * 4];
+    for (int x = 0; x < kernelSize; x++)
+    {
+        for (int y = 0; y < kernelSize; y++)
+        {
+            floats[(x + y * (int)kernelSize) * 4] = data[x, y];
+            floats[(x + y * (int)kernelSize) * 4 + 1] = data[x, y];
+            floats[(x + y * (int)kernelSize) * 4 + 2] = data[x, y];
+            floats[(x + y * (int)kernelSize) * 4 + 3] = 1;
+        }
+    }
+    
+    weightsTexture.Resize((int)kernelSize, (int)kernelSize, floats);
+    return floats;
+}
 
 window.Resize += size =>
 {
@@ -163,8 +210,19 @@ void Step()
     smoothLifeShader.SetFloat("t1bu", t1bu);
     smoothLifeShader.SetFloat("t2au", t2au);
     smoothLifeShader.SetFloat("t2bu", t2bu);
+
+    smoothLifeShader.SetInt("kernelRadius", (int)kernelSize);
+    smoothLifeShader.SetFloat("kernelRadiusF", kernelSize);
+    smoothLifeShader.SetFloat("squaredRadiusF", kernelSize * kernelSize); // we do this here, because cpu is faster than gpu
     
-    GL.DispatchCompute(ComputeShaderExtensions.GetNumWorkGroups(slWidth, 16), ComputeShaderExtensions.GetNumWorkGroups(slHeight, 16), 1);
+    smoothLifeShader.SetInt("internalKernelRadius", internalKernelSize);
+    smoothLifeShader.SetFloat("internalKernelRadiusF", internalKernelSize);
+    smoothLifeShader.SetFloat("squaredInternalKernelRadiusF", internalKernelSize * internalKernelSize);
+    
+    // Bind the image to the input buffer (2)
+    weightsTexture.BindCompute(2, TextureAccess.ReadOnly);
+    
+    GL.DispatchCompute(ComputeShaderExtensions.GetNumWorkGroups(slWidth, 32), ComputeShaderExtensions.GetNumWorkGroups(slHeight, 32), 1);
     GL.MemoryBarrier(MemoryBarrierFlags.ShaderStorageBarrierBit);
     
     // We need to copy the output buffer to the texture
@@ -346,6 +404,20 @@ uniform vec3 whiteLevel;
     }
     
     ImGui.End();
+
+    if (ImGui.Begin("Weights"))
+    {
+        ImGui.Image(weightsTexture!.Handle, new System.Numerics.Vector2(200, 200), new System.Numerics.Vector2(0, 1), new System.Numerics.Vector2(1, 0));
+        ImGui.DragInt("Kernel Size", ref kernelSize, 1);
+        ImGui.DragFloat("Outer Sigma", ref outerSigma, 0.01f);
+        ImGui.DragFloat("Inner Sigma", ref innerSigma, 0.01f);
+        ImGui.SliderInt("Internal Kernel Size", ref internalKernelSize, 1, kernelSize);
+
+        if (ImGui.Button("Recalculate"))
+        {
+            CalculateWeightData();
+        }
+    }
     
     if (dragging && !ImGui.IsAnyItemActive())
     {

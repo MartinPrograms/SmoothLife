@@ -1,7 +1,7 @@
 ﻿#version 450 core
 #define PI 3.14159265359
 
-layout(local_size_x = 16, local_size_y = 16) in;
+layout(local_size_x = 32, local_size_y = 32) in;
 
 layout(std430, binding = 0) buffer Input {
     float inputBuffer[];
@@ -11,19 +11,24 @@ layout(std430, binding = 1) buffer Output {
     float outputBuffer[];
 };
 
+layout(rgba32f, binding = 2) uniform image2D weightsBuffer;
+
+// There is only one (1) weight. It is of size kernelRadius * kernelRadius. The weights are stored in a 1D array, so we can use the formula weights[y * kernelRadius + x] to access the weight at (x, y).
+uniform int kernelRadius;
+uniform float kernelRadiusF;
+uniform float squaredRadiusF;
+
+uniform int internalKernelRadius;
+uniform float internalKernelRadiusF;
+uniform float squaredInternalKernelRadiusF;
+
+
+float getWeight(int x, int y) {
+    return imageLoad(weightsBuffer, ivec2(x, y)).r;
+}
+
 uniform int width;
 uniform int height;
-
-// Kernel radius for SmoothLife
-const int kernelRadius = 16; // Adjust as needed, circular kernel
-const float kernelRadiusF = float(kernelRadius);
-
-// Because its a circular kernel, we need to compute the number of pixels
-const int kernelNumPixels = (2 * kernelRadius + 1) * (2 * kernelRadius + 1);
-
-const int internalRadius = 3; // 3x3 kernel
-const float internalRadiusF = float(internalRadius);
-const int internalNumPixels = (2 * internalRadius + 1) * (2 * internalRadius + 1);
 
 float fastSigmoid(float x, float x0, float sigma) {
     float s = (x - x0) / sigma;
@@ -60,38 +65,30 @@ void main() {
     float u0 = 0.0;
     float u1 = 0.0;
     
-    // The kernel is circular
-    for (int i = -kernelRadius; i <= kernelRadius; i++) {
-        for (int j = -kernelRadius; j <= kernelRadius; j++) {
-            float dist = sqrt(float(i * i + j * j));
+    // The kernel is a 2D texture, with a value corresponding to the weight at that position [0, 1]
+    // The size of this texture is kernelRadius and kernelRadius
+    for (int i = 0; i < kernelRadius; i++){ // X
+        for (int j = 0; j < kernelRadius; j++){
+            // Get the weight at this position
+            float weight = getWeight(i, j);
             
-            if (dist <= kernelRadiusF) {
-                int xIndex = int(x) + i;
-                int yIndex = int(y) + j;
-                
-                // If within the internal radius, compute u1
-                if (dist <= internalRadiusF) {
-                    if (xIndex >= 0 && xIndex < width && yIndex >= 0 && yIndex < height) {
-                        uint index = uint(yIndex) * uint(width) + uint(xIndex);
-                        float value = inputBuffer[index];
-                        
-                        u1 += value;
-                    }
-                }
-                
-                if (xIndex >= 0 && xIndex < width && yIndex >= 0 && yIndex < height) {
-                    uint index = uint(yIndex) * uint(width) + uint(xIndex);
-                    float value = inputBuffer[index];
-                    
-                    u0 += value;
-                }
+            // Get the value at this position
+            float valueAtPosition = 0.0;
+            int offsetX = int(x) - kernelRadius / 2 + i;
+            int offsetY = int(y) - kernelRadius / 2 + j;
+            if (offsetX >= 0 && offsetX < width && offsetY >= 0 && offsetY < height){
+                valueAtPosition = inputBuffer[offsetY * width + offsetX];
             }
+            
+            // Update u0 and u1
+            u0 += weight * valueAtPosition;
+            u1 += weight * valueAtPosition * valueAtPosition;
         }
     }
     
     // Normalize u0 and u1
-    u0 /= kernelNumPixels;
-    u1 /= internalNumPixels;
+    u0 /= squaredRadiusF;
+    u1 /= squaredInternalKernelRadiusF;
     
     
     // Compute the growth function

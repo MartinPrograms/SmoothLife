@@ -46,14 +46,13 @@ public class Texture : IDisposable
         GL.BindTexture(TextureTarget.Texture2D, 0);
     }
 
-    public void Resize(int sizeX, int sizeY)
+    public void Resize(int sizeX, int sizeY, float[] data = null)
     {
         Width = sizeX;
         Height = sizeY;
         
         GL.BindTexture(TextureTarget.Texture2D, Handle);
-        
-        GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba32f, sizeX, sizeY, 0, PixelFormat.Rgba, PixelType.Float, IntPtr.Zero);
+        GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba32f, sizeX, sizeY, 0, PixelFormat.Rgba, PixelType.Float, data);
     }
 
     public void BindCompute(int i, TextureAccess access = TextureAccess.ReadWrite)
