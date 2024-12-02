@@ -1,4 +1,5 @@
 ﻿global using OpenTK.Windowing.GraphicsLibraryFramework;
+using System.Text.Json;
 using ImGuiNET;
 using SmoothLife;
 using SmoothLife.Graphics;
@@ -202,6 +203,32 @@ void DrawState()
 }
 
 
+void SaveSettings()
+{
+    var data = new data(sig,s_u1u,t1au,t1bu,t2au,t2bu, hue, saturation, brightness, blackLevel, whiteLevel);
+    File.WriteAllText("./settings.json", JsonSerializer.Serialize(data));
+}
+
+void LoadSettings()
+{
+    if (!File.Exists("./settings.json"))
+    {
+        return;
+    }
+    
+    var data = JsonSerializer.Deserialize<data>(File.ReadAllText("./settings.json"));
+    sig = data.sig;
+    s_u1u = data.s_u1u;
+    t1au = data.t1au;
+    t1bu = data.t1bu;
+    t2au = data.t2au;
+    t2bu = data.t2bu;
+    hue = data.hue;
+    saturation = data.saturation;
+    brightness = data.brightness;
+    blackLevel = data.blackLevel;
+    whiteLevel = data.whiteLevel;
+}
 
 window.Render += (dt, ms, ks) =>
 {
@@ -300,6 +327,27 @@ uniform vec3 whiteLevel;
     
     ImGui.End();
     
+    if (ImGui.Begin("Simulation Settings"))
+    {
+        ImGui.DragFloat("sig", ref sig, 0.01f);
+        ImGui.DragFloat("s_u1u", ref s_u1u, 0.01f);
+        ImGui.DragFloat("t1au", ref t1au, 0.01f);
+        ImGui.DragFloat("t1bu", ref t1bu, 0.01f);
+        ImGui.DragFloat("t2au", ref t2au, 0.01f);
+        ImGui.DragFloat("t2bu", ref t2bu, 0.01f);
+        if (ImGui.Button("Save"))
+        {
+            SaveSettings();
+        }
+        ImGui.SameLine();
+        if (ImGui.Button("Load"))
+        {
+            LoadSettings();
+        }
+    }
+    
+    ImGui.End();
+    
     if (dragging && !ImGui.IsAnyItemActive())
     {
         pos += new System.Numerics.Vector2(-window.MouseDelta.X, window.MouseDelta.Y) / zoom;
@@ -309,3 +357,5 @@ uniform vec3 whiteLevel;
 };
 
 window.Run();
+
+record data(float sig, float s_u1u, float t1au, float t1bu, float t2au, float t2bu, float hue, float saturation, float brightness, System.Numerics.Vector3 blackLevel, System.Numerics.Vector3 whiteLevel);
