@@ -96,7 +96,7 @@ void main() {
     
     // Normalize u0 and u1
     u0 /= squaredRadiusF;
-    u1 /= squaredInternalKernelRadiusF;
+    u1 /= squaredRadiusF;
     
     
     // Compute the growth function

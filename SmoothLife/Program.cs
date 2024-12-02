@@ -24,6 +24,8 @@ float outerSigma = 2;
 float innerSigma = 1;
 Texture weightsTexture = null;
 
+Texture growthGraph = null; // This is a texture, where we will plot the growth function
+
 int slWidth = 2000;
 int slHeight = 2000;
 
@@ -82,7 +84,6 @@ window.KeyDown += key =>
 
     if (key == Keys.R)
     {
-        
         var data = new float[slWidth * slHeight];
         for (int i = 0; i < data.Length; i++)
         {
