@@ -47,6 +47,61 @@ vec2 GridToScreen(vec2 screenPos) {
     return (screenPos - pos) * zoom + vec2(width, height) / 2.0;
 }
 
+vec3 HSVtoRGB(vec3 hsv) {
+    float c = hsv.z * hsv.y;
+    float x = c * (1.0 - abs(mod(hsv.x * 6.0, 2.0) - 1.0));
+    float m = hsv.z - c;
+
+    vec3 rgb = vec3(0.0, 0.0, 0.0);
+    if (hsv.x < 1.0) {
+        rgb = vec3(c, x, 0.0);
+    } else if (hsv.x < 2.0) {
+        rgb = vec3(x, c, 0.0);
+    } else if (hsv.x < 3.0) {
+        rgb = vec3(0.0, c, x);
+    } else if (hsv.x < 4.0) {
+        rgb = vec3(0.0, x, c);
+    } else if (hsv.x < 5.0) {
+        rgb = vec3(x, 0.0, c);
+    } else {
+        rgb = vec3(c, 0.0, x);
+    }
+
+    return rgb + vec3(m, m, m);
+}
+
+vec3 RGBtoHSV(vec3 rgb) {
+    float cmax = max(rgb.r, max(rgb.g, rgb.b));
+    float cmin = min(rgb.r, min(rgb.g, rgb.b));
+    float delta = cmax - cmin;
+
+    vec3 hsv = vec3(0.0, 0.0, 0.0);
+    if (delta == 0.0) {
+        hsv.x = 0.0;
+    } else if (cmax == rgb.r) {
+        hsv.x = mod((rgb.g - rgb.b) / delta, 6.0);
+    } else if (cmax == rgb.g) {
+        hsv.x = (rgb.b - rgb.r) / delta + 2.0;
+    } else {
+        hsv.x = (rgb.r - rgb.g) / delta + 4.0;
+    }
+
+    hsv.x *= 60.0;
+    if (hsv.x < 0.0) {
+        hsv.x += 360.0;
+    }
+
+    if (cmax == 0.0) {
+        hsv.y = 0.0;
+    } else {
+        hsv.y = delta / cmax;
+    }
+
+    hsv.z = cmax;
+
+    return hsv;
+}
+
 void main() {
     uint x = gl_GlobalInvocationID.x;
     uint y = gl_GlobalInvocationID.y;
@@ -70,7 +125,10 @@ void main() {
         }
 
         // Now we display the value
-        result += vec3(value, value, value);
+        vec3 hsv = vec3(0.0, 0.5, log(value + 1.0) / log(2.0));
+        hsv.x = 100 * value;
+        
+        result += HSVtoRGB(hsv);
 
         // In a 8x8 gridspace circle around the mouse, we set the value on red to 0.2    
         if (distance(ScreenToGrid(mousePos), ScreenToGrid(vec2(x, y))) < radius) {

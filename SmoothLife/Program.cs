@@ -137,7 +137,7 @@ float lastStep = 0;
 bool playing = false;
 
 float hue = 0;
-float saturation = 1;
+float saturation = 0.5f;
 float brightness = 1;
 
 System.Numerics.Vector3 blackLevel = new(0, 0, 0);
