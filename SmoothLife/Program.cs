@@ -226,8 +226,7 @@ void LoadSettings()
     hue = data.hue;
     saturation = data.saturation;
     brightness = data.brightness;
-    blackLevel = data.blackLevel;
-    whiteLevel = data.whiteLevel;
+    
 }
 
 window.Render += (dt, ms, ks) =>
