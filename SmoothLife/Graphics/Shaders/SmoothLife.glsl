@@ -43,11 +43,12 @@ uniform float t2au; // 0.26 by default
 uniform float t2bu; // 0.9 by default
 
 float growth(float u0, float u1) {
-    float s_u1 = fastSigmoid(u1, s_u1u, sig);
-    float t1 = fastSigmoid(u0, t1au, sig) * (1.0 - fastSigmoid(u0, t1bu, sig));
-    float t2 = fastSigmoid(u0, t2au, sig) * (1.0 - fastSigmoid(u0, t2bu, sig));
-    return s_u1 * t1 + (1.0 - s_u1) * t2;
+    float s = fastSigmoid(u0, 0.5, sig);
+    float t1 = t1au * u0 + t1bu;
+    float t2 = t2au * u0 + t2bu;
+    return s * (1.0 - s) * (s_u1u * u1 + (1.0 - s_u1u) * (t1 - t2));
 }
+
 void main() {
     uint x = gl_GlobalInvocationID.x;
     uint y = gl_GlobalInvocationID.y;
@@ -77,6 +78,13 @@ void main() {
             int offsetX = int(x) - kernelRadius / 2 + i;
             int offsetY = int(y) - kernelRadius / 2 + j;
             if (offsetX >= 0 && offsetX < width && offsetY >= 0 && offsetY < height){
+                valueAtPosition = inputBuffer[offsetY * width + offsetX];
+            }
+            else{
+                // wrap around
+                offsetX = (offsetX + width) % width;
+                offsetY = (offsetY + height) % height;
+                
                 valueAtPosition = inputBuffer[offsetY * width + offsetX];
             }
             
