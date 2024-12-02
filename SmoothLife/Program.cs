@@ -41,6 +41,26 @@ System.Numerics.Vector3 whiteLevel = new(1, 1, 1);
 bool export = false;
 int export_index = 0;
 
+#region Simulation Settings
+
+/*
+uniform float sig; // 0.03 by default
+uniform float s_u1u; // 0.25 by default
+uniform float t1au; // 0.238 by default
+uniform float t1bu; // 0.44 by default
+uniform float t2au; // 0.26 by default
+uniform float t2bu; // 0.9 by default
+*/
+
+float sig = 0.03f;
+float s_u1u = 0.25f;
+float t1au = 0.238f;
+float t1bu = 0.44f;
+float t2au = 0.26f;
+float t2bu = 0.9f;
+
+#endregion
+
 window.KeyDown += key =>
 {
     if (key == Keys.Escape)
@@ -134,6 +154,15 @@ void Step()
     smoothLifeShader!.Use();
     smoothLifeShader.SetInt("width", slWidth);
     smoothLifeShader.SetInt("height", slHeight);
+    
+    // Apply the simulation settings
+    smoothLifeShader.SetFloat("sig", sig);
+    smoothLifeShader.SetFloat("s_u1u", s_u1u);
+    smoothLifeShader.SetFloat("t1au", t1au);
+    smoothLifeShader.SetFloat("t1bu", t1bu);
+    smoothLifeShader.SetFloat("t2au", t2au);
+    smoothLifeShader.SetFloat("t2bu", t2bu);
+    
     GL.DispatchCompute(ComputeShaderExtensions.GetNumWorkGroups(slWidth, 16), ComputeShaderExtensions.GetNumWorkGroups(slHeight, 16), 1);
     GL.MemoryBarrier(MemoryBarrierFlags.ShaderStorageBarrierBit);
     

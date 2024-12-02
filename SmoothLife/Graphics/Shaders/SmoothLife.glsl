@@ -30,10 +30,17 @@ float fastSigmoid(float x, float x0, float sigma) {
     return 1.0 / (1.0 + exp(-s));
 }
 
+uniform float sig; // 0.03 by default
+uniform float s_u1u; // 0.25 by default
+uniform float t1au; // 0.238 by default
+uniform float t1bu; // 0.44 by default
+uniform float t2au; // 0.26 by default
+uniform float t2bu; // 0.9 by default
+
 float growth(float u0, float u1) {
-    float s_u1 = fastSigmoid(u1, 0.25, 0.03);
-    float t1 = fastSigmoid(u0, 0.238, 0.03) * (1.0 - fastSigmoid(u0, 0.44, 0.03));
-    float t2 = fastSigmoid(u0, 0.26, 0.03) * (1.0 - fastSigmoid(u0, 0.9, 0.03));
+    float s_u1 = fastSigmoid(u1, s_u1u, sig);
+    float t1 = fastSigmoid(u0, t1au, sig) * (1.0 - fastSigmoid(u0, t1bu, sig));
+    float t2 = fastSigmoid(u0, t2au, sig) * (1.0 - fastSigmoid(u0, t2bu, sig));
     return s_u1 * t1 + (1.0 - s_u1) * t2;
 }
 void main() {
