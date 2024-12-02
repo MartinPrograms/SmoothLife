@@ -27,12 +27,52 @@ float zoomSmoothness = 5;
 bool dragging = false;
 float radius = 2;
 
+float rate = 10; // 10 steps per second
+float lastStep = 0;
+bool playing = false;
+
+float hue = 0;
+float saturation = 0.5f;
+float brightness = 1;
+
+System.Numerics.Vector3 blackLevel = new(0, 0, 0);
+System.Numerics.Vector3 whiteLevel = new(1, 1, 1);
+
+bool export = false;
+int export_index = 0;
 
 window.KeyDown += key =>
 {
     if (key == Keys.Escape)
     {
         window.Close();
+    }
+    
+    if (key == Keys.Space)
+    {
+        playing = !playing;
+    }
+
+    if (key == Keys.R)
+    {
+        
+        var data = new float[slWidth * slHeight];
+        for (int i = 0; i < data.Length; i++)
+        {
+            data[i] = (float)Random.Shared.NextDouble();
+        }
+        slInput!.SetData(data);
+    }
+
+    if (key == Keys.C)
+    {
+        var data = new float[slWidth * slHeight];
+        slInput!.SetData(data);
+    }
+
+    if (key == Keys.S)
+    {
+        Step();
     }
 };
 
@@ -132,19 +172,7 @@ void DrawState()
     slInput!.Read();
 }
 
-float rate = 10; // 10 steps per second
-float lastStep = 0;
-bool playing = false;
 
-float hue = 0;
-float saturation = 0.5f;
-float brightness = 1;
-
-System.Numerics.Vector3 blackLevel = new(0, 0, 0);
-System.Numerics.Vector3 whiteLevel = new(1, 1, 1);
-
-bool export = false;
-int export_index = 0;
 
 window.Render += (dt, ms, ks) =>
 {
@@ -209,7 +237,7 @@ uniform vec3 whiteLevel;
     {
         playing = !playing;
     }
-    ImGui.SliderFloat("Rate", ref rate, 1, 60);
+    ImGui.SliderFloat("Rate", ref rate, 1, 144);
     if (ImGui.Button("Step"))
     {
         Step();
@@ -225,8 +253,8 @@ uniform vec3 whiteLevel;
     if (ImGui.Begin("Controls"))
     {
         ImGui.DragFloat2("Position", ref pos, 0.01f);
-        ImGui.DragFloat("Zoom", ref zoom, 0.01f);
-        ImGui.DragFloat("Radius", ref radius, 0.01f);
+        ImGui.DragFloat("Zoom", ref targetZoom, 0.01f);
+        ImGui.DragFloat("Radius", ref radius, 1f);
     }
     
     ImGui.End();
