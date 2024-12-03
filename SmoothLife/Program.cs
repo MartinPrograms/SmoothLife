@@ -18,10 +18,10 @@ Mesh square = null;
 Ssbo<float> slInput = null;
 Ssbo<float> slOutput = null;
 
-int kernelSize = 16;
+int kernelSize = 11;
 int internalKernelSize = 3;
-float outerSigma = 2;
-float innerSigma = 1;
+float outerSigma = 3;
+float innerSigma = 0.4f;
 Texture weightsTexture = null;
 
 Texture growthGraph = null; // This is a texture, where we will plot the growth function
