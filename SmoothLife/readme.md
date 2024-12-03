@@ -1,8 +1,7 @@
 ﻿# SmoothLife
 A gpu-accelerated implementation of SmoothLife, a continuous version of Conway's Game of Life.  
-All in C# and OpenGl.  
-The values have yet to be tweaked, so it might not look as good as it could, but it works.
-
+All in C# and OpenGL.  
+To create a colony, i recommend cranking the s_u1u value way up, so it turns into chaos, and then slowly lowering it to see the colony form.
 ## What is SmoothLife?
 SmoothLife is a continuous version of Conway's Game of Life.
 https://conwaylife.com/wiki/OCA:SmoothLife  
