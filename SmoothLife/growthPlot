@@ -1,0 +1,71 @@
+﻿import math
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Global variables for the constants
+THRESHOLD_U0_1 = 0.50
+THRESHOLD_U0_2 = 0.25
+THRESHOLD_U1 = 0.5
+THRESHOLD_U0_3 = 0.43
+THRESHOLD_U0_4 = 0.26
+
+# Smooth transition factor (controls how sharp the transition is)
+SMOOTHNESS = 50  # You can adjust this for a more or less smooth curve
+
+def sigmoid(x):
+    return 1 / (1 + math.exp(-x))
+
+def upper(u0, u1):
+    # Apply sigmoid smoothing for u0 based on thresholds
+    smooth_u0_1 = sigmoid((u0 - THRESHOLD_U0_2) * SMOOTHNESS)  # Transition for u0 from 0.26 to 0.46
+    smooth_u0_2 = sigmoid((THRESHOLD_U0_1 - u0) * SMOOTHNESS)  # Transition for u0 from 0.46 to 0.26
+
+    # Apply sigmoid smoothing for u1 based on its threshold (0.5)
+    smooth_u1 = sigmoid((u1 - THRESHOLD_U1) * SMOOTHNESS)  # Transition for u1 from 0.5
+
+    return smooth_u1 * smooth_u0_1 * smooth_u0_2
+
+def lower(u0, u1):
+    # Apply sigmoid smoothing for u0 based on thresholds
+    smooth_u0_3 = sigmoid((u0 - THRESHOLD_U0_4) * SMOOTHNESS)  # Transition for u0 from 0.27 to 0.36
+    smooth_u0_4 = sigmoid((THRESHOLD_U0_3 - u0) * SMOOTHNESS)  # Transition for u0 from 0.36 to 0.27
+
+    # Apply sigmoid smoothing for u1 based on its threshold (0.5)
+    u1 = 1 - u1  # Invert u1
+    smooth_u1 = sigmoid((u1 - THRESHOLD_U1) * SMOOTHNESS)  # Transition for u1 from 0.5
+
+    return smooth_u1 * smooth_u0_3 * smooth_u0_4
+
+def growth(u0, u1):
+    output = upper(u0, u1)
+    output += lower(u0, u1)
+    return output
+
+def growth_grid(u0, u1):
+    # Create a grid of zeros
+    growth_values = np.zeros_like(u0)
+    # Calculate growth values for each pair of u0 and u1
+    for i in range(u0.shape[0]):
+        for j in range(u0.shape[1]):
+            growth_values[i, j] = growth(u0[i, j], u1[i, j])
+    return growth_values
+
+# Generate u0 and u1 values for plotting
+u0_values = np.linspace(0, 1, 100)  # u0 values between 0 and 1
+u1_values = np.linspace(0, 1, 100)  # u1 values between 0 and 1
+
+# Create a grid of u0 and u1 values
+u0_grid, u1_grid = np.meshgrid(u0_values, u1_values)
+
+# Calculate growth values
+growth_values = growth_grid(u0_grid, u1_grid)
+
+# Plotting
+plt.figure(figsize=(10, 6))
+contour = plt.contourf(u0_grid, u1_grid, growth_values, levels=50, cmap='viridis')
+plt.colorbar(contour, label="Growth Value")
+plt.xlabel("u0")
+plt.ylabel("u1")
+plt.title("Growth Function")
+plt.show()

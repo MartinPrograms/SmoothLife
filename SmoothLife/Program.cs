@@ -52,21 +52,12 @@ int export_index = 0;
 
 #region Simulation Settings
 
-/*
-uniform float sig; // 0.03 by default
-uniform float s_u1u; // 0.25 by default
-uniform float t1au; // 0.238 by default
-uniform float t1bu; // 0.44 by default
-uniform float t2au; // 0.26 by default
-uniform float t2bu; // 0.9 by default
-*/
-
-float sig = 0.03f;
-float s_u1u = 0.25f;
-float t1au = 0.238f;
-float t1bu = 0.44f;
-float t2au = 0.26f;
-float t2bu = 0.9f;
+float smoothness = 50;
+float threshold_u0_1 = 0.5f;
+float threshold_u0_2 = 0.25f;
+float threshold_u1 = 0.5f;
+float threshold_u0_3 = 0.43f;
+float threshold_u0_4 = 0.26f;
 
 #endregion
 
@@ -205,12 +196,12 @@ void Step()
     smoothLifeShader.SetInt("height", slHeight);
     
     // Apply the simulation settings
-    smoothLifeShader.SetFloat("sig", sig);
-    smoothLifeShader.SetFloat("s_u1u", s_u1u);
-    smoothLifeShader.SetFloat("t1au", t1au);
-    smoothLifeShader.SetFloat("t1bu", t1bu);
-    smoothLifeShader.SetFloat("t2au", t2au);
-    smoothLifeShader.SetFloat("t2bu", t2bu);
+    smoothLifeShader.SetFloat("smoothness", smoothness);
+    smoothLifeShader.SetFloat("threshold_u0_1", threshold_u0_1);
+    smoothLifeShader.SetFloat("threshold_u0_2", threshold_u0_2);
+    smoothLifeShader.SetFloat("threshold_u1", threshold_u1);
+    smoothLifeShader.SetFloat("threshold_u0_3", threshold_u0_3);
+    smoothLifeShader.SetFloat("threshold_u0_4", threshold_u0_4);
 
     smoothLifeShader.SetInt("kernelRadius", (int)kernelSize);
     smoothLifeShader.SetFloat("kernelRadiusF", kernelSize);
@@ -264,27 +255,11 @@ void DrawState()
 
 void SaveSettings()
 {
-    var data = new data(sig,s_u1u,t1au,t1bu,t2au,t2bu, hue, saturation, brightness, blackLevel, whiteLevel);
-    File.WriteAllText("./settings.json", JsonSerializer.Serialize(data));
+    
 }
 
 void LoadSettings()
 {
-    if (!File.Exists("./settings.json"))
-    {
-        return;
-    }
-    
-    var data = JsonSerializer.Deserialize<data>(File.ReadAllText("./settings.json"));
-    sig = data.sig;
-    s_u1u = data.s_u1u;
-    t1au = data.t1au;
-    t1bu = data.t1bu;
-    t2au = data.t2au;
-    t2bu = data.t2bu;
-    hue = data.hue;
-    saturation = data.saturation;
-    brightness = data.brightness;
     
 }
 
@@ -387,12 +362,12 @@ uniform vec3 whiteLevel;
     
     if (ImGui.Begin("Simulation Settings"))
     {
-        ImGui.DragFloat("sig", ref sig, 0.01f);
-        ImGui.DragFloat("s_u1u", ref s_u1u, 0.01f);
-        ImGui.DragFloat("t1au", ref t1au, 0.01f);
-        ImGui.DragFloat("t1bu", ref t1bu, 0.01f);
-        ImGui.DragFloat("t2au", ref t2au, 0.01f);
-        ImGui.DragFloat("t2bu", ref t2bu, 0.01f);
+        ImGui.DragFloat("Smoothness", ref smoothness, 0.01f);
+        ImGui.DragFloat("Threshold U0_1", ref threshold_u0_1, 0.01f);
+        ImGui.DragFloat("Threshold U0_2", ref threshold_u0_2, 0.01f);
+        ImGui.DragFloat("Threshold U1", ref threshold_u1, 0.01f);
+        ImGui.DragFloat("Threshold U0_3", ref threshold_u0_3, 0.01f);
+        ImGui.DragFloat("Threshold U0_4", ref threshold_u0_4, 0.01f);
         if (ImGui.Button("Save"))
         {
             SaveSettings();
@@ -430,4 +405,3 @@ uniform vec3 whiteLevel;
 
 window.Run();
 
-record data(float sig, float s_u1u, float t1au, float t1bu, float t2au, float t2bu, float hue, float saturation, float brightness, System.Numerics.Vector3 blackLevel, System.Numerics.Vector3 whiteLevel);

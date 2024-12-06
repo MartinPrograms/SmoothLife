@@ -30,23 +30,36 @@ float getWeight(int x, int y) {
 uniform int width;
 uniform int height;
 
-float fastSigmoid(float x, float x0, float sigma) {
-    float s = (x - x0) / sigma;
-    return 1.0 / (1.0 + exp(-s));
+float sigmoid(float x) {
+    return 1.0 / (1.0 + exp(-x));
 }
 
-uniform float sig; // 0.03 by default
-uniform float s_u1u; // 0.25 by default
-uniform float t1au; // 0.238 by default
-uniform float t1bu; // 0.44 by default
-uniform float t2au; // 0.26 by default
-uniform float t2bu; // 0.9 by default
+uniform float smoothness; // 50 default.
+uniform float threshold_u0_1; // 0.50 default.
+uniform float threshold_u0_2; // 0.25 default.
+uniform float threshold_u1; // 0.5 default.
+uniform float threshold_u0_3; // 0.43 default.
+uniform float threshold_u0_4; // 0.26 default.
+
+float upper(float u0, float u1){
+    float smooth_u0_1 = sigmoid((u0 - threshold_u0_2) * smoothness);
+    float smooth_u0_2 = sigmoid((threshold_u0_1 - u0) * smoothness);
+    float smooth_u1 = sigmoid((u1 - threshold_u1) * smoothness);
+    return smooth_u1 * smooth_u0_1 * smooth_u0_2;
+}
+
+float lower(float u0, float u1){
+    float smooth_u0_3 = sigmoid((u0 - threshold_u0_4) * smoothness);
+    float smooth_u0_4 = sigmoid((threshold_u0_3 - u0) * smoothness);
+    u1 = 1.0 - u1;
+    float smooth_u1 = sigmoid((u1 - threshold_u1) * smoothness);
+    return smooth_u1 * smooth_u0_3 * smooth_u0_4;
+}
 
 float growth(float u0, float u1) {
-    float s = fastSigmoid(u0, 0.5, sig);
-    float t1 = t1au * u0 + t1bu;
-    float t2 = t2au * u0 + t2bu;
-    return s * (1.0 - s) * (s_u1u * u1 + (1.0 - s_u1u) * (t1 - t2));
+    float outputval = upper(u0, u1);
+    outputval += lower(u0, u1);
+    return outputval;
 }
 
 void main() {
@@ -88,15 +101,39 @@ void main() {
                 valueAtPosition = inputBuffer[offsetY * width + offsetX];
             }
             
-            // Update u0 and u1
+            // Update u0
             u0 += weight * valueAtPosition;
-            u1 += weight * valueAtPosition * valueAtPosition;
+        }
+    }
+    
+    for (int i = 0; i < internalKernelRadius; i++){ // X
+        for (int j = 0; j < internalKernelRadius; j++){
+            // Get the weight at this position
+            float weight = getWeight(i, j);
+            
+            // Get the value at this position
+            float valueAtPosition = 0.0;
+            int offsetX = int(x) - internalKernelRadius / 2 + i;
+            int offsetY = int(y) - internalKernelRadius / 2 + j;
+            if (offsetX >= 0 && offsetX < width && offsetY >= 0 && offsetY < height){
+                valueAtPosition = inputBuffer[offsetY * width + offsetX];
+            }
+            else{
+                // wrap around
+                offsetX = (offsetX + width) % width;
+                offsetY = (offsetY + height) % height;
+                
+                valueAtPosition = inputBuffer[offsetY * width + offsetX];
+            }
+            
+            // Update u1
+            u1 += weight * valueAtPosition;
         }
     }
     
     // Normalize u0 and u1
     u0 /= squaredRadiusF;
-    u1 /= squaredRadiusF;
+    u1 /= internalKernelRadiusF;
     
     
     // Compute the growth function
